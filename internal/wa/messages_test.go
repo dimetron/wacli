@@ -32,6 +32,45 @@ func TestParseHistoryMessageTextAndSender(t *testing.T) {
 	}
 }
 
+func TestParseHistoryMessageTopLevelParticipant(t *testing.T) {
+	groupJID := "120363001234567890@g.us"
+	senderLID := "12345:67@lid"
+	h := &waProto.WebMessageInfo{
+		Key: &waProto.MessageKey{
+			ID:        proto.String("msgid2"),
+			FromMe:    proto.Bool(false),
+			RemoteJID: proto.String(groupJID),
+		},
+		Participant:      proto.String(senderLID),
+		MessageTimestamp: proto.Uint64(uint64(time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC).Unix())),
+		Message:          &waProto.Message{Conversation: proto.String("from lid group")},
+	}
+
+	pm := ParseHistoryMessage(groupJID, h)
+	if pm.SenderJID != senderLID {
+		t.Fatalf("SenderJID = %q, want %q", pm.SenderJID, senderLID)
+	}
+}
+
+func TestParseHistoryMessageKeyParticipantStillWorks(t *testing.T) {
+	sender := "sender@s.whatsapp.net"
+	h := &waProto.WebMessageInfo{
+		Key: &waProto.MessageKey{
+			ID:          proto.String("msgid3"),
+			FromMe:      proto.Bool(false),
+			RemoteJID:   proto.String("120363001234567890@g.us"),
+			Participant: proto.String(sender),
+		},
+		MessageTimestamp: proto.Uint64(uint64(time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC).Unix())),
+		Message:          &waProto.Message{Conversation: proto.String("from regular group")},
+	}
+
+	pm := ParseHistoryMessage("120363001234567890@g.us", h)
+	if pm.SenderJID != sender {
+		t.Fatalf("SenderJID = %q, want %q", pm.SenderJID, sender)
+	}
+}
+
 func TestParseLiveMessageImageClonesBytes(t *testing.T) {
 	chat, _ := types.ParseJID("123@s.whatsapp.net")
 	sender, _ := types.ParseJID("sender@s.whatsapp.net")

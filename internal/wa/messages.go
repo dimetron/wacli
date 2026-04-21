@@ -65,7 +65,10 @@ func ParseHistoryMessage(chatJID string, hist *waProto.WebMessageInfo) ParsedMes
 		FromMe:    hist.GetKey().GetFromMe(),
 	}
 
-	sender := strings.TrimSpace(hist.GetKey().GetParticipant())
+	sender := strings.TrimSpace(hist.GetParticipant())
+	if sender == "" {
+		sender = strings.TrimSpace(hist.GetKey().GetParticipant())
+	}
 	if sender == "" {
 		sender = strings.TrimSpace(hist.GetKey().GetRemoteJID())
 	}
