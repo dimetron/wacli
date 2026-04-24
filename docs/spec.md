@@ -11,7 +11,8 @@ This document defines the v1 plan for `wacli`: a WhatsApp CLI that syncs message
 - **Human-first output**: readable tables by default, `--json` opt-in for scripting.
 - **Single-instance safety**: store locking to avoid multi-instance session conflicts (device/session replacement issues).
 - **Group management**: list groups, inspect, rename, manage participants, invites.
-
+- **Pure Go libraries**: no CGO_ENABLED=0 https://pkg.go.dev/modernc.org/sqlite  
+- 
 ## Non-goals (v1)
 
 - Guaranteed full-history export (WhatsApp/WhatsApp Web history is best-effort).

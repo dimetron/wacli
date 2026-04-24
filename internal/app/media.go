@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"mime"
 	"os"
@@ -127,7 +126,7 @@ func (a *App) runMediaWorkers(ctx context.Context, jobs <-chan mediaJob, workers
 func (a *App) downloadMediaJob(ctx context.Context, job mediaJob) error {
 	info, err := a.db.GetMediaDownloadInfo(job.chatJID, job.msgID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if store.IsNotFound(err) {
 			return nil
 		}
 		return err

@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -151,7 +149,7 @@ func resolveReplySender(db *store.DB, chat types.JID, replyTo, override string) 
 	}
 
 	msg, err := db.GetMessage(chat.String(), replyTo)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil && !store.IsNotFound(err) {
 		return types.JID{}, fmt.Errorf("lookup quoted message: %w", err)
 	}
 	if err == nil && strings.TrimSpace(msg.SenderJID) != "" {

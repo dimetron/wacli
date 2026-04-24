@@ -9,9 +9,7 @@ import (
 
 func TestSearchMessagesUsesLIKEWhenFTSDisabled(t *testing.T) {
 	db := openTestDB(t)
-	if db.HasFTS() {
-		t.Fatalf("expected HasFTS=false in !sqlite_fts5 build")
-	}
+	db.ftsEnabled = false
 
 	chat := "123@s.whatsapp.net"
 	if err := db.UpsertChat(chat, "dm", "Alice", time.Now()); err != nil {

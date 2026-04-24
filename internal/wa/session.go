@@ -3,13 +3,14 @@ package wa
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/steipete/wacli/internal/sqliteutil"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
+	_ "modernc.org/sqlite"
 )
 
 func (c *Client) init() error {
@@ -21,8 +22,22 @@ func (c *Client) init() error {
 	if err := sqliteutil.ChmodFiles(c.opts.StorePath, 0o600); err != nil {
 		return err
 	}
-	container, err := sqlstore.New(ctx, "sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", c.opts.StorePath), dbLog)
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s", c.opts.StorePath))
 	if err != nil {
+		return fmt.Errorf("open whatsmeow sqlite: %w", err)
+	}
+	db.SetMaxOpenConns(1)
+	if _, err := db.Exec("PRAGMA foreign_keys=ON;"); err != nil {
+		_ = db.Close()
+		return fmt.Errorf("enable whatsmeow foreign keys: %w", err)
+	}
+	if _, err := db.Exec("PRAGMA busy_timeout=60000;"); err != nil {
+		_ = db.Close()
+		return fmt.Errorf("set whatsmeow busy timeout: %w", err)
+	}
+	container := sqlstore.NewWithDB(db, "sqlite", dbLog)
+	if err := container.Upgrade(ctx); err != nil {
+		_ = db.Close()
 		return fmt.Errorf("open whatsmeow store: %w", err)
 	}
 	if err := sqliteutil.ChmodFiles(c.opts.StorePath, 0o600); err != nil {
@@ -31,7 +46,7 @@ func (c *Client) init() error {
 
 	deviceStore, err := container.GetFirstDevice(ctx)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			deviceStore = container.NewDevice()
 		} else {
 			return fmt.Errorf("get device store: %w", err)

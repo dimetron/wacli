@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -184,7 +183,7 @@ func (d *DB) tableExists(table string) (bool, error) {
 	row := d.sql.QueryRow(`SELECT 1 FROM sqlite_master WHERE name = ? AND type IN ('table','view')`, table)
 	var one int
 	if err := row.Scan(&one); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if isSQLiteNotFound(err) {
 			return false, nil
 		}
 		return false, err

@@ -1,11 +1,12 @@
 package store
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
 )
+
+var ErrNotFound = errors.New("record not found")
 
 type Chat struct {
 	JID           string
@@ -110,5 +111,14 @@ func nullIfEmpty(s string) interface{} {
 func (d *DB) HasFTS() bool { return d.ftsEnabled }
 
 func IsNotFound(err error) bool {
-	return errors.Is(err, sql.ErrNoRows)
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, ErrNotFound) || isSQLiteNotFound(err)
+}
+
+// isSQLiteNotFound checks if the error indicates no rows found.
+// modernc.org/sqlite wraps sql.ErrNoRows internally, so we check the message.
+func isSQLiteNotFound(err error) bool {
+	return err.Error() == "sql: no rows in result set"
 }

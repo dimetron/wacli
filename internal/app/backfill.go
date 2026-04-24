@@ -2,13 +2,13 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/steipete/wacli/internal/store"
 	"go.mau.fi/whatsmeow/proto/waHistorySync"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -114,7 +114,7 @@ func (a *App) BackfillHistory(ctx context.Context, opts BackfillOptions) (Backfi
 			for i := 0; i < opts.Requests; i++ {
 				oldest, err := a.db.GetOldestMessageInfo(chatStr)
 				if err != nil {
-					if err == sql.ErrNoRows {
+					if store.IsNotFound(err) {
 						return fmt.Errorf("no messages for %s in local DB; run `wacli sync` first", chatStr)
 					}
 					return err

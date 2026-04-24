@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/steipete/wacli/internal/fsutil"
 	"github.com/steipete/wacli/internal/sqliteutil"
+	_ "modernc.org/sqlite"
 )
 
 type DB struct {
@@ -29,10 +29,11 @@ func Open(path string) (*DB, error) {
 		return nil, fmt.Errorf("create db directory: %w", err)
 	}
 
-	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on&_busy_timeout=5000", path))
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s", path))
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
+	db.SetMaxOpenConns(1)
 
 	s := &DB{path: path, sql: db}
 	if err := s.init(); err != nil {
@@ -55,10 +56,13 @@ func (d *DB) Close() error {
 
 func (d *DB) init() error {
 	// Pragmas: keep consistent for writers/readers.
+	// Note: _foreign_keys and _busy_timeout are not supported in the modernc.org/sqlite
+	// DSN; they are set via PRAGMA below.
 	_, _ = d.sql.Exec("PRAGMA journal_mode=WAL;")
 	_, _ = d.sql.Exec("PRAGMA synchronous=NORMAL;")
 	_, _ = d.sql.Exec("PRAGMA temp_store=MEMORY;")
 	_, _ = d.sql.Exec("PRAGMA foreign_keys=ON;")
+	_, _ = d.sql.Exec("PRAGMA busy_timeout=60000;")
 
 	if err := d.ensureSchema(); err != nil {
 		return err
